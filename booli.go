@@ -215,6 +215,15 @@ func GetResultImpl(searchCond SearchCondition, callerId string, key string, http
 	if err != nil {
 		return booliRes, err
 	}
+	
+	if resp.StatusCode == 403 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return booliRes, err
+		}
+		return booliRes, errors.New("Received 403 with error message: " + string(body)) 
+	}
+	
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
