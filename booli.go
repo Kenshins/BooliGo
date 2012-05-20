@@ -9,6 +9,7 @@ import ( 	"net/http"
 			"io"
 			"io/ioutil"
 			"strconv"
+			"fmt"
 		)
 			
 const 	(
@@ -16,6 +17,24 @@ const 	(
 			Abc = "abcdefghijklmnopqrstuvxyzABCDEFGHIJKLMNOPQRSTXYZ1234567890"
 			
 		)
+		
+// Error types
+
+type AuthError struct {
+	ErrString string
+}
+
+func (e *AuthError) Error() string {
+	return fmt.Sprintf("Received http response code 403 with error message: %s", e.ErrString)
+}
+
+type MissingArgumentError struct {
+	ErrString string
+}
+
+func (e *MissingArgumentError) Error() string {
+	return fmt.Sprintf("Missing argument with error message: %s", e.ErrString)
+}
 
 // Data received from Booli json is parsed into the following struct
 type Result struct {
@@ -199,11 +218,11 @@ func GetResult(searchCond SearchCondition, callerId string, key string) (booliRe
 // Add a implementation function to be able to feed a custom Http.get function for unit testing
 func GetResultImpl(searchCond SearchCondition, callerId string, key string, httpGet IHttpGet) (booliRes Result, err error) {
 	if callerId == "" {
-		return booliRes, errors.New("Caller Id empty!") 
+		return booliRes, &MissingArgumentError{ErrString: "Caller Id empty!"}
 	}
 	
 	if key == "" {
-		return booliRes, errors.New("Key empty!") 
+		return booliRes, &MissingArgumentError{ErrString: "Key empty!"}
 	}
 
 	searchStr, err := searchStr(searchCond, callerId, key)
@@ -219,9 +238,9 @@ func GetResultImpl(searchCond SearchCondition, callerId string, key string, http
 	if resp.StatusCode == 403 {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return booliRes, err
+			return booliRes, errors.New("When reading the body from http response code 403 the following error occurred: " + err.Error())
 		}
-		return booliRes, errors.New("Received 403 with error message: " + string(body)) 
+		return booliRes, &AuthError{ErrString: string(body)}
 	}
 	
 	defer resp.Body.Close()

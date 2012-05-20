@@ -9,7 +9,7 @@ import (
 		)
 		
 const (
-		GetFailed = 1
+		GetNonAuth = 1
 		GetOk = 2
 		GetCheckSearchCond = 3
 	  )
@@ -54,9 +54,9 @@ func (h *MockHttpGet) Get(url string) (r *http.Response, err error) {
 		// Todo: make Ok booli response
 		resp := http.Response{}
 		return &resp, nil
-	case GetFailed:
+	case GetNonAuth:
 		// Todo: make broken response
-		resp := http.Response{}
+		resp := http.Response{Status: "403 OK", StatusCode: 403, Body: &ReadCloser{}}
 		return &resp, nil
 	}
 	return r, errors.New("Missing Test type to use mock get in unit test!")	
@@ -103,5 +103,11 @@ func TestGetResultImpl (t *testing.T) {
 		if err != nil {
 			t.Errorf("%s", err.Error())
 		}
+	}
+	
+	// Test wrong auth
+	_, err = GetResultImpl(SearchCondition{Q:"nacka"}, "xxx", "xxx", &MockHttpGet{UrlMatch: "http://api.booli.se/listings?offset=0&limit=3&q=nacka", TestType: GetNonAuth})
+	if err == nil {
+		t.Errorf("Error, should alert for wrong auth!")
 	}
 }
