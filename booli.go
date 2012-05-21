@@ -44,8 +44,8 @@ type Result struct {
 }
 
 type HouseList struct {
-	BooliId int
-	ListPrice int
+	BooliId int64
+	ListPrice int64
 	Published string
 	ListPriceChangeDate string
 	Objecttype string
@@ -53,9 +53,9 @@ type HouseList struct {
 	Source SourceObject
 	Rooms float64
     LivingArea float64
-    Rent int
-    Floor int
-    IsNewConstruction int
+    Rent int64
+    Floor int64
+    IsNewConstruction int64
     Url string
 }
 
