@@ -38,8 +38,8 @@ func (e *MissingArgumentError) Error() string {
 
 // Data received from Booli json is parsed into the following struct
 type Result struct {
-    TotalCount  int
-    Count int
+    TotalCount  int64
+    Count int64
 	Listings []HouseList
 }
 
