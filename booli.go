@@ -206,7 +206,7 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 		if s.Center == "" {
 		return "", &MissingArgumentError{ErrString: "Need Center if Dim is used!"}
 		}
-		val, err := formatDim(s.Dim)
+		val, err := formatCheck(s.Dim,2,"Dim must be two positive numbers of the format 1,1!","GreaterThenZeroCheck")
 		if err != nil {
 			return "", err
 		}
@@ -217,8 +217,11 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 		if s.Dim == "" {
 		return "", &MissingArgumentError{ErrString: "Need Dim if Center is used!"}
 		}
-		// Todo: Check input to conform to 1,1
-		searchString += "&center=" + s.Center
+		val, err := formatCheck(s.Center,2,"Latitude must be between 90 and -90 and Longitude must be between 180 and -180 and be of the format 1.0,1.0!","LatLongCheck")
+		if err != nil {
+			return "", err
+		}
+		searchString += "&center=" + val
 	} 
 	
 	if s.Q != "" {
@@ -318,18 +321,31 @@ func unique() (outstr string, err error) {
 	return outstr, err
 }
 
-func formatDim(instr string) (outstr string, err error) {
-	splitDim := strings.Split(instr, ",")
-	if len(splitDim) != 2 {
-		return "", &IncorrectArgumentError{ErrString: "Dim must be two positive numbers of the format 1,1!"}
+func formatCheck(instr string, length int, errorMsg string, errorType string) (outstr string, err error) {
+	split := strings.Split(instr, ",")
+	if len(split) != length {
+		return "", &IncorrectArgumentError{ErrString: errorMsg }
 	}
-	for _, v := range splitDim {
-		val, err := strconv.ParseInt(v, 10, 64)
+	for i, v := range split {
+		val, err := strconv.ParseFloat(v,64)
 		if err != nil {
-			return "", &IncorrectArgumentError{ErrString: "Dim must be two positive numbers of the format 1,1!"}
+			return "", &IncorrectArgumentError{ErrString: errorMsg }
 		}
+		switch errorType {
+		case "GreaterThenZeroCheck":
 		if val < 0 {
-			return "", &IncorrectArgumentError{ErrString: "Dim must be two positive numbers of the format 1,1!"}
+			return "", &IncorrectArgumentError{ErrString: errorMsg }
+		}
+		case "LatLongCheck":
+			if i == 0 { // Lat
+				if val > 90 || val < -90 {
+				return "", &IncorrectArgumentError{ErrString: errorMsg }
+				}
+		} else { // Long
+				if val > 180 || val < -180 {
+				return "", &IncorrectArgumentError{ErrString: errorMsg }
+				}
+		}
 		}
 	}
 	return instr, nil
