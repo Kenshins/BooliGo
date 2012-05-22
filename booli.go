@@ -9,6 +9,7 @@ import ( 	"net/http"
 			"io"
 			"io/ioutil"
 			"strconv"
+			"strings"
 			"fmt"
 		)
 			
@@ -34,6 +35,14 @@ type MissingArgumentError struct {
 
 func (e *MissingArgumentError) Error() string {
 	return fmt.Sprintf("Missing argument with error message: %s", e.ErrString)
+}
+
+type IncorrectArgumentError struct {
+	ErrString string
+}
+
+func (e *IncorrectArgumentError) Error() string {
+	return fmt.Sprintf("Incorrect argument with error message: %s", e.ErrString)
 }
 
 // Data received from Booli json is parsed into the following struct
@@ -117,7 +126,7 @@ type IHttpGet interface {
 func (s *SearchCondition) getSearchString() (searchString string, err error) {
 
 	if s.Q == "" && s.Center == "" && s.AreaId == "" {
-	return "", errors.New("Need Q, Center or AreaId to perform a search!")	
+	return "", &MissingArgumentError{ErrString: "Need Q, Center or AreaId to perform a search!"}
 	}
 
 	if s.Offset != 0 {
@@ -194,11 +203,20 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 	}
 		
 	if s.Dim != "" {
-		// Todo: Check input to conform to 1,1
-		searchString += "&dim=" + s.Dim	
+		if s.Center == "" {
+		return "", &MissingArgumentError{ErrString: "Need Center if Dim is used!"}
+		}
+		val, err := formatDim(s.Dim)
+		if err != nil {
+			return "", err
+		}
+		searchString += "&dim=" + val
 	}
 	
 	if s.Center != "" {
+		if s.Dim == "" {
+		return "", &MissingArgumentError{ErrString: "Need Dim if Center is used!"}
+		}
 		// Todo: Check input to conform to 1,1
 		searchString += "&center=" + s.Center
 	} 
@@ -298,4 +316,25 @@ func unique() (outstr string, err error) {
 		return outstr, err
 	}
 	return outstr, err
+}
+
+func formatDim(instr string) (outstr string, err error) {
+	splitDim := strings.Split(instr, ",")
+	if len(splitDim) != 2 {
+		return "", &IncorrectArgumentError{ErrString: "Dim must be two positive numbers of the format 1,1!"}
+	}
+	for _, v := range splitDim {
+		val, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return "", &IncorrectArgumentError{ErrString: "Dim must be two positive numbers of the format 1,1!"}
+		}
+		if val < 0 {
+			return "", &IncorrectArgumentError{ErrString: "Dim must be two positive numbers of the format 1,1!"}
+		}
+	}
+	return instr, nil
+}
+
+func checkLatLong(instr string) bool {
+	return true
 }

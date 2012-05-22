@@ -62,16 +62,28 @@ func (h *MockHttpGet) Get(url string) (r *http.Response, err error) {
 	return r, errors.New("Missing Test type to use mock get in unit test!")	
 }
 
-type searchMatch struct {
+type searchMatchPos struct {
 	SearchCond SearchCondition
 	UrlMatch string
 }
 
-var searchConditionPositiveTests = []searchMatch { {SearchCondition{Q: "nacka"}, "http://api.booli.se/listings?offset=0&limit=3&q=nacka"},
+type searchMatchNeg struct {
+	SearchCond SearchCondition
+	ExpectedError string
+}
+
+var searchConditionPositiveTests = []searchMatchPos { {SearchCondition{Q: "nacka"}, "http://api.booli.se/listings?offset=0&limit=3&q=nacka"},
 												 {SearchCondition{Q: "svapasjarvi"}, "http://api.booli.se/listings?offset=0&limit=3&q=svapasjarvi" }, 
 												 {SearchCondition{Q: "nacka", Center: "20,20", Dim: "300,300", Bbox: "1,1,1,1"}, "http://api.booli.se/listings?offset=0&limit=3&bbox=1,1,1,1&dim=300,300&center=20,20&q=nacka" },
 												 {SearchCondition{Q: "nacka", Center: "1,1", Dim: "1,1", Bbox: "1,1,1,1", AreaId: "1,2,3", MinPrice: 200000, MaxPrice: 2000000, MinRooms: 2, MaxRooms: 4, MaxRent: 500, MinLivingArea: 10, MaxLivingArea: 500, MinPlotArea: 200, MaxPlotArea: 6000, ObjectType: "villa, radhus", MinCreated: "20100101", MaxCreated: "20100115", Limit:0, Offset:0}, "http://api.booli.se/listings?offset=0&limit=3&maxCreated=20100115&minCreated=20100101&objectType=villa, radhus&maxPlotArea=6000&minPlotArea=200&maxLivingArea=500&minLivingArea=10&maxRent=500&maxRooms=4&minRooms=2&maxPrice=2000000&minPrice=200000&areaId=1,2,3&bbox=1,1,1,1&dim=1,1&center=1,1&q=nacka" }}
-		
+
+var searchConditionNegativeTests = []searchMatchNeg { {SearchCondition{Q: "nacka", Center: "1,1"}, "Missing Dim!"},
+													  {SearchCondition{Q: "nacka", Dim: "1,1"}, "Missing Center!"}, 
+													  {SearchCondition{Q: "nacka", Dim: "-1,1", Center: "1,1"}, "Negative Dim!"},
+													  {SearchCondition{Q: "nacka", Dim: "f,1", Center: "1,1"}, "Non number input Dim!"},
+													  {SearchCondition{Q: "nacka", Dim: "1,1,1", Center: "1,1"}, "To many args to Dim!"},
+													  {SearchCondition{Q: "nacka", Dim: "1", Center: "1,1"}, "To few args to Dim!"}}
+												 
 func TestGetResultImpl (t *testing.T) {
 	// Test caller id empty
 	_, err := GetResultImpl(SearchCondition{}, "", "xxx", nil)
@@ -97,11 +109,19 @@ func TestGetResultImpl (t *testing.T) {
 		t.Errorf("Error, should alert for missing search conditions!")
 	}
 	
-	// Test	search conditions
+	// Test	search conditions positive tests
 	for i := range searchConditionPositiveTests {
 		_, err = GetResultImpl(searchConditionPositiveTests[i].SearchCond, "xxx", "xxx", &MockHttpGet{UrlMatch: searchConditionPositiveTests[i].UrlMatch, TestType: GetCheckSearchCond})
 		if err != nil {
 			t.Errorf("%s", err.Error())
+		}
+	}
+	
+	// Test	search conditions negative tests
+	for i := range searchConditionNegativeTests {
+		_, err = GetResultImpl(searchConditionNegativeTests[i].SearchCond, "xxx", "xxx", &MockHttpGet{TestType: GetOk})
+		if err == nil {
+			t.Errorf("The current test should produce error: " + searchConditionNegativeTests[i].ExpectedError)
 		}
 	}
 	
