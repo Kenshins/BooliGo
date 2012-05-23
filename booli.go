@@ -339,11 +339,11 @@ func formatCheck(instr string, length int, errorMsg string, errorType string) (o
 		case "LatLongCheck":
 			if i == 0 { // Lat
 				if val > 90 || val < -90 {
-				return "", &IncorrectArgumentError{ErrString: errorMsg }
+					return "", &IncorrectArgumentError{ErrString: errorMsg }
 				}
 		} else { // Long
 				if val > 180 || val < -180 {
-				return "", &IncorrectArgumentError{ErrString: errorMsg }
+					return "", &IncorrectArgumentError{ErrString: errorMsg }
 				}
 		}
 		}
