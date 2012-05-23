@@ -51,8 +51,7 @@ func (h *MockHttpGet) Get(url string) (r *http.Response, err error) {
 		}
 		return &resp, nil
 	case GetOk:
-		// Todo: make Ok booli response
-		resp := http.Response{}
+		resp := http.Response{Status: "200 OK", StatusCode: 200, Body: &ReadCloser{}}
 		return &resp, nil
 	case GetNonAuth:
 		// Todo: make broken response
@@ -82,7 +81,11 @@ var searchConditionNegativeTests = []searchMatchNeg { {SearchCondition{Q: "nacka
 													  {SearchCondition{Q: "nacka", Dim: "-1,1", Center: "1,1"}, "Negative Dim!"},
 													  {SearchCondition{Q: "nacka", Dim: "f,1", Center: "1,1"}, "Non number input Dim!"},
 													  {SearchCondition{Q: "nacka", Dim: "1,1,1", Center: "1,1"}, "To many args to Dim!"},
-													  {SearchCondition{Q: "nacka", Dim: "1", Center: "1,1"}, "To few args to Dim!"}}
+													  {SearchCondition{Q: "nacka", Dim: "1", Center: "1,1"}, "To few args to Dim!"},
+													  {SearchCondition{Q: "nacka", Dim: "1,1", Center: "-91,1"}, "Lat must be between -90 to 90!"},
+													  {SearchCondition{Q: "nacka", Dim: "1,1", Center: "91,1"}, "Lat must be between -90 to 90!"},
+													  {SearchCondition{Q: "nacka", Dim: "1,1", Center: "1,-181"}, "Long must be between -180 to 180!"},
+													  {SearchCondition{Q: "nacka", Dim: "1,1", Center: "1,181"}, "Long must be between -180 to 180!"}}
 												 
 func TestGetResultImpl (t *testing.T) {
 	// Test caller id empty
