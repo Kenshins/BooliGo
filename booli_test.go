@@ -85,7 +85,8 @@ var searchConditionNegativeTests = []searchMatchNeg { {SearchCondition{Q: "nacka
 													  {SearchCondition{Q: "nacka", Dim: "1,1", Center: "-91,1"}, "Lat must be between -90 to 90!"},
 													  {SearchCondition{Q: "nacka", Dim: "1,1", Center: "91,1"}, "Lat must be between -90 to 90!"},
 													  {SearchCondition{Q: "nacka", Dim: "1,1", Center: "1,-181"}, "Long must be between -180 to 180!"},
-													  {SearchCondition{Q: "nacka", Dim: "1,1", Center: "1,181"}, "Long must be between -180 to 180!"}}
+													  {SearchCondition{Q: "nacka", Dim: "1,1", Center: "1,181"}, "Long must be between -180 to 180!"},
+													  {SearchCondition{Q: "nacka", MaxPrice: -20}, "MaxPrice can not be negative!"}}
 												 
 func TestGetResultImpl (t *testing.T) {
 	// Test caller id empty

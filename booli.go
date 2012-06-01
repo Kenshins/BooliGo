@@ -136,6 +136,9 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 	}
 	
 	if s.Limit != 0 {
+		if s.Limit < 0 {
+			return "", &IncorrectArgumentError{ErrString: "Limit can not be negative!" }
+		}
 		searchString += "&limit=" + strconv.FormatInt(int64(s.Limit),10)
 	} else {
 		searchString += "&limit=3"
@@ -157,38 +160,65 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 	}
 	
 	if s.MaxPlotArea != 0 {
+		if s.MaxPlotArea < 0 {
+			return "", &IncorrectArgumentError{ErrString: "MaxPlotArea can not be negative!" }
+		}
 		searchString += "&maxPlotArea=" +  strconv.FormatInt(int64(s.MaxPlotArea),10)
 	}
 	
 	if s.MinPlotArea != 0 {
+		if s.MinPlotArea < 0 {
+			return "", &IncorrectArgumentError{ErrString: "MinPlotArea can not be negative!" }
+		}
 		searchString += "&minPlotArea=" +  strconv.FormatInt(int64(s.MinPlotArea),10)
 	}
 		
 	if s.MaxLivingArea != 0 {
+		if s.MaxLivingArea < 0 {
+			return "", &IncorrectArgumentError{ErrString: "MaxLivingArea can not be negative!" }
+		}
 		searchString += "&maxLivingArea=" +  strconv.FormatInt(int64(s.MaxLivingArea),10)
 	}	
 	
 	if s.MinLivingArea != 0 {
+		if s.MinLivingArea < 0 {
+			return "", &IncorrectArgumentError{ErrString: "MinLivingArea can not be negative!" }
+		}
 		searchString += "&minLivingArea=" +  strconv.FormatInt(int64(s.MinLivingArea),10)
 	}
 	
 	if s.MaxRent != 0 {
+		if s.MaxRent < 0 {
+			return "", &IncorrectArgumentError{ErrString: "MaxRent can not be negative!" }
+		}
 		searchString += "&maxRent=" +  strconv.FormatInt(int64(s.MaxRent),10)
 	}
 	
 	if s.MaxRooms != 0 {
+		if s.MaxRooms < 0 {
+			return "", &IncorrectArgumentError{ErrString: "MaxRooms can not be negative!" }
+		}
 		searchString += "&maxRooms=" +  strconv.FormatInt(int64(s.MaxRooms),10)
 	}
 	
 	if s.MinRooms != 0 {
+		if s.MinRooms < 0 {
+			return "", &IncorrectArgumentError{ErrString: "MinRooms can not be negative!" }
+		}
 		searchString += "&minRooms=" +  strconv.FormatInt(int64(s.MinRooms),10)
 	}	
 	
 	if s.MaxPrice != 0 {
+		if s.MaxPrice < 0 {
+			return "", &IncorrectArgumentError{ErrString: "MaxPrice can not be negative!" }
+		}
 		searchString += "&maxPrice=" +  strconv.FormatInt(int64(s.MaxPrice),10)
 	}
 
 	if s.MinPrice != 0 {
+		if s.MinPrice < 0 {
+			return "", &IncorrectArgumentError{ErrString: "MinPrice can not be negative!" }
+		}
 		searchString += "&minPrice=" +  strconv.FormatInt(int64(s.MinPrice),10)
 	}
 		
