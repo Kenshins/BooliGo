@@ -145,12 +145,21 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 	}
 	
 	if s.MaxCreated != "" {
-		// Todo: Check for bad date
+		_, err := time.Parse("20060102", s.MaxCreated)
+		
+		if err != nil {
+			return "", &IncorrectArgumentError{ErrString: "MaxCreated is not in the format 20060102, YYYYMMDD!" }	
+		}
 		searchString += "&maxCreated=" + s.MaxCreated
 	}
 	
 	if s.MinCreated != "" {
-		// Todo: Check for bad date
+		_, err := time.Parse("20060102", s.MinCreated)
+		
+		if err != nil {
+			return "", &IncorrectArgumentError{ErrString: "MinCreated is not in the format 20060102, YYYYMMDD!" }	
+		}
+		
 		searchString += "&minCreated=" + s.MinCreated
 	}
 		
@@ -223,20 +232,26 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 	}
 		
 	if s.AreaId != "" {
-		// Todo: Check input to conform to 33,44...
-		searchString += "&areaId=" + s.AreaId
+		val, err := formatCheck(s.AreaId,0,"AreaId must be one or more positive numbers in the format 66,78...!","GreaterThenZeroCheck")
+		if err != nil {
+			return "", err
+		}
+		searchString += "&areaId=" + val
 	}
 	
 	if s.Bbox != "" {
-		// Todo: Check input to conform to 1,1,1,1
-		searchString += "&bbox=" + s.Bbox
+		val, err := formatCheck(s.Bbox,4,"Bbox must be four numbers in the format 1,1,1,1!","GreaterThenZeroCheck")
+		if err != nil {
+			return "", err
+		}
+		searchString += "&bbox=" + val
 	}
 		
 	if s.Dim != "" {
 		if s.Center == "" {
 		return "", &MissingArgumentError{ErrString: "Need Center if Dim is used!"}
 		}
-		val, err := formatCheck(s.Dim,2,"Dim must be two positive numbers of the format 1,1!","GreaterThenZeroCheck")
+		val, err := formatCheck(s.Dim,2,"Dim must be two positive numbers in the format 1,1!","GreaterThenZeroCheck")
 		if err != nil {
 			return "", err
 		}
@@ -247,7 +262,7 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 		if s.Dim == "" {
 		return "", &MissingArgumentError{ErrString: "Need Dim if Center is used!"}
 		}
-		val, err := formatCheck(s.Center,2,"Latitude must be between 90 and -90 and Longitude must be between 180 and -180 and be of the format 1.0,1.0!","LatLongCheck")
+		val, err := formatCheck(s.Center,2,"Latitude must be between 90 and -90 and Longitude must be between 180 and -180 and be in the format 1.0,1.0!","LatLongCheck")
 		if err != nil {
 			return "", err
 		}
@@ -353,7 +368,8 @@ func unique() (outstr string, err error) {
 
 func formatCheck(instr string, length int, errorMsg string, errorType string) (outstr string, err error) {
 	split := strings.Split(instr, ",")
-	if len(split) != length {
+	
+	if len(split) != length && length != 0 {
 		return "", &IncorrectArgumentError{ErrString: errorMsg }
 	}
 	for i, v := range split {

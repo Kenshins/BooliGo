@@ -86,7 +86,13 @@ var searchConditionNegativeTests = []searchMatchNeg { {SearchCondition{Q: "nacka
 													  {SearchCondition{Q: "nacka", Dim: "1,1", Center: "91,1"}, "Lat must be between -90 to 90!"},
 													  {SearchCondition{Q: "nacka", Dim: "1,1", Center: "1,-181"}, "Long must be between -180 to 180!"},
 													  {SearchCondition{Q: "nacka", Dim: "1,1", Center: "1,181"}, "Long must be between -180 to 180!"},
-													  {SearchCondition{Q: "nacka", MaxPrice: -20}, "MaxPrice can not be negative!"}}
+													  {SearchCondition{Q: "nacka", MaxPrice: -20}, "MaxPrice can not be negative!"},
+													  {SearchCondition{Q: "nacka", MaxCreated: "2001-11-02"}, "MaxCreated not conforming to YYYYMMDD!"},
+													  {SearchCondition{Q: "nacka", MinCreated: "2001-11-02"}, "MinCreated not conforming to YYYYMMDD!"},
+													  {SearchCondition{Q: "nacka", AreaId: "ff,1,22"}, "AreaID must be in the format 55,44...!"},
+													  {SearchCondition{Q: "nacka", AreaId: "ff"}, "AreaID must be in the format 55,44...!"},
+													  {SearchCondition{Q: "nacka", Bbox: "1,1,1"}, "Bbox must be 1,1,1,1!"},
+													  {SearchCondition{Q: "nacka", Bbox: "1,1,1,f"}, "Bbox must be 1,1,1,1!"}}
 												 
 func TestGetResultImpl (t *testing.T) {
 	// Test caller id empty
