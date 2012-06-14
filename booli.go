@@ -240,7 +240,7 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 	}
 	
 	if s.Bbox != "" {
-		val, err := formatCheck(s.Bbox,4,"Bbox must be four numbers in the format 1,1,1,1!","GreaterThenZeroCheck")
+		val, err := formatCheck(s.Bbox,4,"Bbox must be two lat-long pairs, on the form lat_lo,long_lo,lat_hi,long_hi where lo is south west and hi is north east!","BboxCheck")
 		if err != nil {
 			return "", err
 		}
@@ -383,20 +383,49 @@ func formatCheck(instr string, length int, errorMsg string, errorType string) (o
 			return "", &IncorrectArgumentError{ErrString: errorMsg }
 		}
 		case "LatLongCheck":
-			if i == 0 { // Lat
-				if val > 90 || val < -90 {
+			if i == 0 {
+				if checkLatOutOfBound(val) {
 					return "", &IncorrectArgumentError{ErrString: errorMsg }
 				}
-		} else { // Long
-				if val > 180 || val < -180 {
+		} else {
+				if checkLongOutOfBound(val) {
 					return "", &IncorrectArgumentError{ErrString: errorMsg }
 				}
 		}
+		case "BboxCheck":
+			switch i {
+				case 0:
+					if checkLatOutOfBound(val) {
+						return "", &IncorrectArgumentError{ErrString: errorMsg }
+					}
+				case 1:
+					if checkLongOutOfBound(val) {
+						return "", &IncorrectArgumentError{ErrString: errorMsg }
+					}
+				case 2:
+					if checkLatOutOfBound(val) {
+						return "", &IncorrectArgumentError{ErrString: errorMsg }
+					}
+				case 3:
+					if checkLongOutOfBound(val) {
+						return "", &IncorrectArgumentError{ErrString: errorMsg }
+					}
+			}
 		}
 	}
 	return instr, nil
 }
 
-func checkLatLong(instr string) bool {
-	return true
+func checkLatOutOfBound(val float64) bool {
+	if val > 90 || val < -90 {
+		return true
+	}
+	return false
+}
+
+func checkLongOutOfBound(val float64) bool {
+	if val > 180 || val < -180 {
+		return true
+	}
+	return false
 }

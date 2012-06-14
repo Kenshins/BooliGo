@@ -74,7 +74,7 @@ type searchMatchNeg struct {
 var searchConditionPositiveTests = []searchMatchPos { {SearchCondition{Q: "nacka"}, "http://api.booli.se/listings?offset=0&limit=3&q=nacka"},
 												 {SearchCondition{Q: "svapasjarvi"}, "http://api.booli.se/listings?offset=0&limit=3&q=svapasjarvi" }, 
 												 {SearchCondition{Q: "nacka", Center: "20,20", Dim: "300,300", Bbox: "1,1,1,1"}, "http://api.booli.se/listings?offset=0&limit=3&bbox=1,1,1,1&dim=300,300&center=20,20&q=nacka" },
-												 {SearchCondition{Q: "nacka", Center: "1,1", Dim: "1,1", Bbox: "1,1,1,1", AreaId: "1,2,3", MinPrice: 200000, MaxPrice: 2000000, MinRooms: 2, MaxRooms: 4, MaxRent: 500, MinLivingArea: 10, MaxLivingArea: 500, MinPlotArea: 200, MaxPlotArea: 6000, ObjectType: "villa, radhus", MinCreated: "20100101", MaxCreated: "20100115", Limit:0, Offset:0}, "http://api.booli.se/listings?offset=0&limit=3&maxCreated=20100115&minCreated=20100101&objectType=villa, radhus&maxPlotArea=6000&minPlotArea=200&maxLivingArea=500&minLivingArea=10&maxRent=500&maxRooms=4&minRooms=2&maxPrice=2000000&minPrice=200000&areaId=1,2,3&bbox=1,1,1,1&dim=1,1&center=1,1&q=nacka" }}
+												 {SearchCondition{Q: "nacka", Center: "1,1", Dim: "1,1", Bbox: "-1,1,1,-1", AreaId: "1,2,3", MinPrice: 200000, MaxPrice: 2000000, MinRooms: 2, MaxRooms: 4, MaxRent: 500, MinLivingArea: 10, MaxLivingArea: 500, MinPlotArea: 200, MaxPlotArea: 6000, ObjectType: "villa, radhus", MinCreated: "20100101", MaxCreated: "20100115", Limit:0, Offset:0}, "http://api.booli.se/listings?offset=0&limit=3&maxCreated=20100115&minCreated=20100101&objectType=villa, radhus&maxPlotArea=6000&minPlotArea=200&maxLivingArea=500&minLivingArea=10&maxRent=500&maxRooms=4&minRooms=2&maxPrice=2000000&minPrice=200000&areaId=1,2,3&bbox=-1,1,1,-1&dim=1,1&center=1,1&q=nacka" }}
 
 var searchConditionNegativeTests = []searchMatchNeg { {SearchCondition{Q: "nacka", Center: "1,1"}, "Missing Dim!"},
 													  {SearchCondition{Q: "nacka", Dim: "1,1"}, "Missing Center!"}, 
@@ -92,7 +92,9 @@ var searchConditionNegativeTests = []searchMatchNeg { {SearchCondition{Q: "nacka
 													  {SearchCondition{Q: "nacka", AreaId: "ff,1,22"}, "AreaID must be in the format 55,44...!"},
 													  {SearchCondition{Q: "nacka", AreaId: "ff"}, "AreaID must be in the format 55,44...!"},
 													  {SearchCondition{Q: "nacka", Bbox: "1,1,1"}, "Bbox must be 1,1,1,1!"},
-													  {SearchCondition{Q: "nacka", Bbox: "1,1,1,f"}, "Bbox must be 1,1,1,1!"}}
+													  {SearchCondition{Q: "nacka", Bbox: "1,1,1,f"}, "Bbox must be 1,1,1,1!"},
+													  {SearchCondition{Q: "nacka", Bbox: "-91,1,1,1"}, "Bbox must be 1,1,1,1!"},
+													  {SearchCondition{Q: "nacka", Bbox: "1,1,1,-181"}, "Bbox must be 1,1,1,1!"}}
 												 
 func TestGetResultImpl (t *testing.T) {
 	// Test caller id empty
