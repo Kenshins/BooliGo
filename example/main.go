@@ -1,18 +1,19 @@
 package main
 
 import  (
-		 "github.com/Kenshins/BooliGo"
+		 //"github.com/Kenshins/BooliGo"
+		 "../../BooliGo"
 		 "fmt"
 		 "strconv"
 		 )
 		 
 const (
-		BooliId = "yourBooliId" // Supplied from booli, http://www.booli.se/api/key
-		BooliKey = "P8rhkeJzKOXgHj3XZ1npRXVQG2kHPmXpd5NZetKJ" // Supplied from booli, http://www.booli.se/api/key
+		BooliId = "bopren" // Supplied from booli, http://www.booli.se/api/key
+		BooliKey = "P8rfkeJvKOXgHjvXZ1npRXVGG2kHPmXpd5NZetHS" // Supplied from booli, http://www.booli.se/api/key
 	)
 
 func main() {
-	booliRes, err := booli.GetResult(booli.SearchCondition{Q: "nacka", MaxPrice: 3000000, MinPrice: 300000, MinLivingArea: 65, Limit: 5}, BooliId, BooliKey)
+	booliRes, err := booli.GetResult("listings?", booli.SearchCondition{Q: "nacka", Price: booli.Price{MaxListPrice: 3000000, MinListPrice: 300000}, LivingArea: booli.LivingArea{MinLivingArea: 65}, Limit: 5}, BooliId, BooliKey)
 	if err != nil {
 		fmt.Println(err)
 	}

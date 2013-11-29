@@ -14,7 +14,7 @@ import ( 	"net/http"
 		)
 			
 const 	(
-			BooliHttp = "http://api.booli.se/listings?"
+			BooliHttp = "http://api.booli.se/" // listings? is now prefix
 			Abc = "abcdefghijklmnopqrstuvxyzABCDEFGHIJKLMNOPQRSTXYZ1234567890"
 			
 		)
@@ -96,31 +96,152 @@ type SourceObject struct {
 	Type string
 }
 
-// Searchconditions for Booli search.
+type SearchConditionId struct {
+	Prefix string
+	Id string
+}
+
+func (s *SearchConditionId) getSearchString() (searchString string, err error) {
+	return "", nil // Todo
+}
+
+type SearchConditionArea struct {
+	Q string
+	LatLong string
+}
+
+func (s *SearchConditionArea) getSearchString() (searchString string, err error) {
+	
+	if s.Q == "" && s.LatLong {
+	return "", &MissingArgumentError{ErrString: "Need Q or LatLong to perform a search!"}
+	}
+	
+	// Todo...
+	
+	return "", nil // Todo
+}
+
+type ListingsExtendedSearchCondition struct {
+	PriceListings
+	PriceDecrease bool
+}
+
+func (s *ListingsExtendedSearchCondition) getSearchString() (searchString string, err error) {
+	
+	if s.PriceListings.MaxListPrice != 0 {
+		if s.PriceListings.MaxListPrice > 0 {
+			return "", &IncorrectArgumentError{ErrString: "MaxListPrice can not be negative!" }
+		}
+		searchString += "&MaxListPrice=" +  strconv.FormatInt(int64(s.PriceListings.MaxListPrice),10)
+	}
+	
+	if s.PriceListings.MinListPrice != 0 {
+		if s.PriceListings.MinListPrice > 0 {
+			return "", &IncorrectArgumentError{ErrString: "MinListPrce can not be negative!" }
+		}
+		searchString += "&minListPrice=" +  strconv.FormatInt(int64(s.PriceListings.MinListPrice),10)
+	}
+	
+	if s.PriceDecrease == true {
+		searchString += "&priceDecrease=1"
+	}
+
+	return searchString, nil
+}
+
+type SoldExtendedSearchCondition struct {
+	PriceSold
+	MinSoldDate string
+	MaxSoldDate string
+}
+
+func (s *SoldExtendedSearchCondition) getSearchString() (searchString string, err error) {
+
+	if s.PriceSold.MaxSoldPrice != 0 {
+		if s.PriceSold.MaxSoldPrice > 0 {
+			return "", &IncorrectArgumentError{ErrString: "MaxSoldPrice can not be negative!" }
+		}
+		searchString += "&MaxSoldPrice=" +  strconv.FormatInt(int64(s.PriceSold.MaxSoldPrice),10)
+	}
+	
+	if s.PriceSold.MinSoldPrice != 0 {
+		if s.PriceSold.MinSoldPrice > 0 {
+			return "", &IncorrectArgumentError{ErrString: "MinSoldPrice can not be negative!" }
+		}
+		searchString += "&MinSoldPrice=" +  strconv.FormatInt(int64(s.PriceSold.MinSoldPrice),10)
+	}
+	
+	if s.MaxSoldDate != "" {
+		_, err := time.Parse("20060102", s.MaxSoldDate)
+		
+		if err != nil {
+			return "", &IncorrectArgumentError{ErrString: "MaxSoldDate is not in the format 20060102, YYYYMMDD!" }	
+		}
+		searchString += "&maxSoldDate=" + s.MaxSoldDate
+	}
+		
+	if s.MinSoldDate != "" {
+		_, err := time.Parse("20060102", s.MinSoldDate)
+		
+		if err != nil {
+			return "", &IncorrectArgumentError{ErrString: "MinSoldDate is not in the format 20060102, YYYYMMDD!" }	
+		}
+		searchString += "&minSoldDate=" + s.MinSoldDate
+	}
+	
+	return searchString, nil
+}
+
+
 type SearchCondition struct {
 	Q string
 	Center string
 	Dim string
 	Bbox string
 	AreaId string
-	MinPrice int
-	MaxPrice int
-	MinRooms int
-	MaxRooms int
+	Rooms
 	MaxRent int
-	MinLivingArea int
-	MaxLivingArea int
+	LivingArea
 	MinPlotArea int
 	MaxPlotArea int
 	ObjectType string
-	MinCreated string
-	MaxCreated string
+	MinPublished string
+	MaxPublished string
+	MinConstructionYear string
+	MaxConstructionYear string
+	minSqmPrice int
+	maxSqmPrice int
 	Limit int
 	Offset int
+	ExtendedProperties string
+}
+
+type PriceListings struct {
+	MaxListPrice int
+	MinListPrice int
+}
+
+type PriceSold struct {
+	MaxSoldPrice int
+	MinSoldPrice int
+}
+
+type Rooms struct {
+	MaxRooms int
+	MinRooms int
+}
+
+type LivingArea struct {
+	MaxLivingArea int
+	MinLivingArea int
 }
 
 type IHttpGet interface {
 	Get(url string) (r *http.Response, err error)
+}
+
+type ISearchCondition interface {
+	getSearchString() (searchString string, err error)
 }
 
 func (s *SearchCondition) getSearchString() (searchString string, err error) {
@@ -144,23 +265,43 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 		searchString += "&limit=3"
 	}
 	
-	if s.MaxCreated != "" {
-		_, err := time.Parse("20060102", s.MaxCreated)
+	if s.MaxPublished != "" {
+		_, err := time.Parse("20060102", s.MaxPublished)
 		
 		if err != nil {
 			return "", &IncorrectArgumentError{ErrString: "MaxCreated is not in the format 20060102, YYYYMMDD!" }	
 		}
-		searchString += "&maxCreated=" + s.MaxCreated
+		searchString += "&maxPublished=" + s.MaxPublished
 	}
 	
-	if s.MinCreated != "" {
-		_, err := time.Parse("20060102", s.MinCreated)
+	if s.MinPublished != "" {
+		_, err := time.Parse("20060102", s.MinPublished)
 		
 		if err != nil {
 			return "", &IncorrectArgumentError{ErrString: "MinCreated is not in the format 20060102, YYYYMMDD!" }	
 		}
 		
-		searchString += "&minCreated=" + s.MinCreated
+		searchString += "&minPublished=" + s.MinPublished
+	}
+	
+	if s.MaxConstructionYear != "" {
+		_, err := time.Parse("20060102", s.MaxConstructionYear)
+		
+		if err != nil {
+			return "", &IncorrectArgumentError{ErrString: "MaxConstructionYear is not in the format 20060102, YYYYMMDD!"}
+		}
+		
+		searchString += "&maxConstructionYear=" + s.MaxConstructionYear
+	}
+	
+	if s.MinConstructionYear != "" {
+		_, err := time.Parse("20060102", s.MinConstructionYear)
+		
+		if err != nil {
+			return "", &IncorrectArgumentError{ErrString: "MinConstructionYear is not in the format 20060102, YYYYMMDD!"}
+		}
+		
+		searchString += "&minConstructionYear=" + s.MinConstructionYear
 	}
 		
 	if s.ObjectType != "" {
@@ -182,18 +323,18 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 		searchString += "&minPlotArea=" +  strconv.FormatInt(int64(s.MinPlotArea),10)
 	}
 		
-	if s.MaxLivingArea != 0 {
-		if s.MaxLivingArea < 0 {
+	if s.LivingArea.MaxLivingArea != 0 {
+		if s.LivingArea.MaxLivingArea < 0 {
 			return "", &IncorrectArgumentError{ErrString: "MaxLivingArea can not be negative!" }
 		}
-		searchString += "&maxLivingArea=" +  strconv.FormatInt(int64(s.MaxLivingArea),10)
+		searchString += "&maxLivingArea=" +  strconv.FormatInt(int64(s.LivingArea.MaxLivingArea),10)
 	}	
 	
-	if s.MinLivingArea != 0 {
-		if s.MinLivingArea < 0 {
+	if s.LivingArea.MinLivingArea != 0 {
+		if s.LivingArea.MinLivingArea < 0 {
 			return "", &IncorrectArgumentError{ErrString: "MinLivingArea can not be negative!" }
 		}
-		searchString += "&minLivingArea=" +  strconv.FormatInt(int64(s.MinLivingArea),10)
+		searchString += "&minLivingArea=" +  strconv.FormatInt(int64(s.LivingArea.MinLivingArea),10)
 	}
 	
 	if s.MaxRent != 0 {
@@ -203,32 +344,32 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 		searchString += "&maxRent=" +  strconv.FormatInt(int64(s.MaxRent),10)
 	}
 	
-	if s.MaxRooms != 0 {
-		if s.MaxRooms < 0 {
+	if s.Rooms.MaxRooms != 0 {
+		if s.Rooms.MaxRooms < 0 {
 			return "", &IncorrectArgumentError{ErrString: "MaxRooms can not be negative!" }
 		}
-		searchString += "&maxRooms=" +  strconv.FormatInt(int64(s.MaxRooms),10)
+		searchString += "&maxRooms=" +  strconv.FormatInt(int64(s.Rooms.MaxRooms),10)
 	}
 	
-	if s.MinRooms != 0 {
-		if s.MinRooms < 0 {
+	if s.Rooms.MinRooms != 0 {
+		if s.Rooms.MinRooms < 0 {
 			return "", &IncorrectArgumentError{ErrString: "MinRooms can not be negative!" }
 		}
-		searchString += "&minRooms=" +  strconv.FormatInt(int64(s.MinRooms),10)
+		searchString += "&minRooms=" +  strconv.FormatInt(int64(s.Rooms.MinRooms),10)
 	}	
 	
-	if s.MaxPrice != 0 {
-		if s.MaxPrice < 0 {
+	if s.Price.MaxListPrice != 0 {
+		if s.Price.MaxListPrice < 0 {
 			return "", &IncorrectArgumentError{ErrString: "MaxPrice can not be negative!" }
 		}
-		searchString += "&maxPrice=" +  strconv.FormatInt(int64(s.MaxPrice),10)
+		searchString += "&maxListPrice=" +  strconv.FormatInt(int64(s.Price.MaxListPrice),10)
 	}
 
-	if s.MinPrice != 0 {
-		if s.MinPrice < 0 {
+	if s.Price.MinListPrice != 0 {
+		if s.Price.MinListPrice < 0 {
 			return "", &IncorrectArgumentError{ErrString: "MinPrice can not be negative!" }
 		}
-		searchString += "&minPrice=" +  strconv.FormatInt(int64(s.MinPrice),10)
+		searchString += "&minListPrice=" +  strconv.FormatInt(int64(s.Price.MinListPrice),10)
 	}
 		
 	if s.AreaId != "" {
@@ -273,16 +414,20 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 		searchString += "&q=" + s.Q
 	} 
 	
+	if s.ExtendedProperties != "" {
+		searchString += s.ExtendedProperties
+	}
+	
 	return searchString, nil
 }
 
 // Returns a result from Booli or a empty result and a error if a problem was encountered
-func GetResult(searchCond SearchCondition, callerId string, key string) (booliRes Result, err error) {
-	return GetResultImpl(searchCond, callerId, key, &http.Client{})
+func GetResult(prefix string, searchCond ISearchCondition, callerId string, key string) (booliRes Result, err error) {
+	return GetResultImpl(prefix, searchCond, callerId, key, &http.Client{})
 }
 
 // Add a implementation function to be able to feed a custom Http.get function for unit testing
-func GetResultImpl(searchCond SearchCondition, callerId string, key string, httpGet IHttpGet) (booliRes Result, err error) {
+func GetResultImpl(prefix string, searchCond ISearchCondition, callerId string, key string, httpGet IHttpGet) (booliRes Result, err error) {
 	if callerId == "" {
 		return booliRes, &MissingArgumentError{ErrString: "Caller Id empty!"}
 	}
@@ -291,7 +436,7 @@ func GetResultImpl(searchCond SearchCondition, callerId string, key string, http
 		return booliRes, &MissingArgumentError{ErrString: "Key empty!"}
 	}
 
-	searchStr, err := searchStr(searchCond, callerId, key)
+	searchStr, err := searchStr(prefix, searchCond, callerId, key)
 	if err != nil {
 		return booliRes, err
 	}
@@ -334,7 +479,7 @@ func sha1String(instr string) (outStr string) {
 	return outStr
 }
 
-func searchStr(searchCond SearchCondition, callerId string, key string) (outstr string, err error) {
+func searchStr(prefix string, searchCond ISearchCondition, callerId string, key string) (outstr string, err error) {
 	
 	cond, err := searchCond.getSearchString()
 	if err != nil {
@@ -349,7 +494,7 @@ func searchStr(searchCond SearchCondition, callerId string, key string) (outstr 
 	}
 	
 	hash := sha1String(callerId + time + key + unique)
-	outstr = BooliHttp + cond + "&callerId=" + callerId + "&time=" + time + "&unique=" + unique + "&hash=" + hash
+	outstr = BooliHttp + prefix + cond + "&callerId=" + callerId + "&time=" + time + "&unique=" + unique + "&hash=" + hash
 	return
 }
 
