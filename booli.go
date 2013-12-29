@@ -122,11 +122,11 @@ func (s *SearchConditionArea) getSearchString() (searchString string, err error)
 			return "", err
 		}
 		split := strings.Split(val, ",")
-		searchString += "&lat=" + split[0] + "&lng" + split[1]  // hmm LatLong should be a separate object
+		searchString += "lat=" + split[0] + "&lng=" + split[1]  // hmm LatLong should be a separate object
 	}
 		
 	if s.Q != "" {
-		searchString += "&q=" + s.Q
+		searchString += "q=" + s.Q
 	} 
 	
 	return searchString, nil
@@ -140,14 +140,14 @@ type ListingsExtendedSearchCondition struct {
 func (s *ListingsExtendedSearchCondition) getSearchString() (searchString string, err error) {
 	
 	if s.PriceListings.MaxListPrice != 0 {
-		if s.PriceListings.MaxListPrice > 0 {
+		if s.PriceListings.MaxListPrice < 0 {
 			return "", &IncorrectArgumentError{ErrString: "MaxListPrice can not be negative!" }
 		}
-		searchString += "&MaxListPrice=" +  strconv.FormatInt(int64(s.PriceListings.MaxListPrice),10)
+		searchString += "&maxListPrice=" +  strconv.FormatInt(int64(s.PriceListings.MaxListPrice),10)
 	}
 	
 	if s.PriceListings.MinListPrice != 0 {
-		if s.PriceListings.MinListPrice > 0 {
+		if s.PriceListings.MinListPrice < 0 {
 			return "", &IncorrectArgumentError{ErrString: "MinListPrce can not be negative!" }
 		}
 		searchString += "&minListPrice=" +  strconv.FormatInt(int64(s.PriceListings.MinListPrice),10)
@@ -169,17 +169,17 @@ type SoldExtendedSearchCondition struct {
 func (s *SoldExtendedSearchCondition) getSearchString() (searchString string, err error) {
 
 	if s.PriceSold.MaxSoldPrice != 0 {
-		if s.PriceSold.MaxSoldPrice > 0 {
+		if s.PriceSold.MaxSoldPrice < 0 {
 			return "", &IncorrectArgumentError{ErrString: "MaxSoldPrice can not be negative!" }
 		}
-		searchString += "&MaxSoldPrice=" +  strconv.FormatInt(int64(s.PriceSold.MaxSoldPrice),10)
+		searchString += "&maxSoldPrice=" +  strconv.FormatInt(int64(s.PriceSold.MaxSoldPrice),10)
 	}
 	
 	if s.PriceSold.MinSoldPrice != 0 {
-		if s.PriceSold.MinSoldPrice > 0 {
+		if s.PriceSold.MinSoldPrice < 0 {
 			return "", &IncorrectArgumentError{ErrString: "MinSoldPrice can not be negative!" }
 		}
-		searchString += "&MinSoldPrice=" +  strconv.FormatInt(int64(s.PriceSold.MinSoldPrice),10)
+		searchString += "&minSoldPrice=" +  strconv.FormatInt(int64(s.PriceSold.MinSoldPrice),10)
 	}
 	
 	if s.MaxSoldDate != "" {

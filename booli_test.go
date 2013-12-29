@@ -41,6 +41,8 @@ type MockHttpGet struct {
 	TestType int
 }
 
+
+
 func (h *MockHttpGet) Get(url string) (r *http.Response, err error) {
 	switch h.TestType {
 	case GetCheckSearchCond:
@@ -61,8 +63,28 @@ func (h *MockHttpGet) Get(url string) (r *http.Response, err error) {
 	return r, errors.New("Missing Test type to use mock get in unit test!")	
 }
 
+type searchCondList struct {
+	sCond SearchCondition
+	lCond ListingsExtendedSearchCondition
+}
+
+type searchCondSold struct {
+	sCond SearchCondition
+	seCond SoldExtendedSearchCondition
+}
+
 type searchMatchPos struct {
 	SearchCond SearchCondition
+	UrlMatch string
+}
+
+type searchMatchListPos struct {
+	 sCondList searchCondList
+	 UrlMatch string
+}
+
+type searchMatchSoldPos struct {
+	sCondSold searchCondSold
 	UrlMatch string
 }
 
@@ -94,6 +116,11 @@ var searchConditionNegativeTests = []searchMatchNeg { {SearchCondition{Q: "nacka
 													  {SearchCondition{Q: "nacka", Bbox: "1,1,1,f"}, "Bbox must be 1,1,1,1!"},
 													  {SearchCondition{Q: "nacka", Bbox: "-91,1,1,1"}, "Bbox must be 1,1,1,1!"},
 													  {SearchCondition{Q: "nacka", Bbox: "1,1,1,-181"}, "Bbox must be 1,1,1,1!"}}
+													  
+var searchConditionListingsTests = []searchMatchListPos {{searchCondList{sCond: SearchCondition{Q: "nacka"},lCond: ListingsExtendedSearchCondition{PriceListings: PriceListings{MaxListPrice: 5000000, MinListPrice: 500000}}}, "http://api.booli.se/listings?offset=0&limit=3&q=nacka&maxListPrice=5000000&minListPrice=500000"},
+														{searchCondList{sCond: SearchCondition{Q: "nacka"},lCond: ListingsExtendedSearchCondition{PriceDecrease: true}}, "http://api.booli.se/listings?offset=0&limit=3&q=nacka&priceDecrease=1"}}
+																										
+var searchConditionSoldTests = []searchMatchSoldPos {{searchCondSold{sCond: SearchCondition{Q: "nacka"},seCond: SoldExtendedSearchCondition{PriceSold: PriceSold{MaxSoldPrice: 5000000, MinSoldPrice: 500000}, MinSoldDate: "20130101", MaxSoldDate: "20131010"}}, "http://api.booli.se/sold?offset=0&limit=3&q=nacka&maxSoldPrice=5000000&minSoldPrice=500000&maxSoldDate=20131010&minSoldDate=20130101"}}
 												 
 func TestGetResultImpl (t *testing.T) {
 	// Test caller id empty
@@ -137,6 +164,112 @@ func TestGetResultImpl (t *testing.T) {
 			t.Errorf("The current test should produce error: " + searchConditionNegativeTests[i].ExpectedError)
 		}
 	}
+	
+	// Test positive list conditions tests
+	for i := range searchConditionListingsTests {
+		searchRes, err := searchConditionListingsTests[i].sCondList.sCond.getSearchString()
+		if err != nil {
+			t.Errorf("%s", err.Error())
+		}
+		
+		extlistRes, err := searchConditionListingsTests[i].sCondList.lCond.getSearchString()		
+		if err != nil {
+			t.Errorf("%s", err.Error())
+		}
+		
+		_, err = GetResultImpl("listings?" + searchRes + extlistRes, "xxx", "xxx", &MockHttpGet{UrlMatch: searchConditionListingsTests[i].UrlMatch, TestType: GetCheckSearchCond})
+		
+		if err != nil {
+			t.Errorf("%s", err.Error())
+		}
+	}
+	
+	// Test positive sold conditions tests
+	for i := range searchConditionSoldTests {
+		searchRes, err := searchConditionSoldTests[i].sCondSold.sCond.getSearchString()
+		if err != nil {
+			t.Errorf("%s", err.Error())
+		}
+		
+		extSoldRes, err := searchConditionSoldTests[i].sCondSold.seCond.getSearchString()		
+		if err != nil {
+			t.Errorf("%s", err.Error())
+		}
+		
+		_, err = GetResultImpl("sold?" + searchRes + extSoldRes, "xxx", "xxx", &MockHttpGet{UrlMatch: searchConditionSoldTests[i].UrlMatch, TestType: GetCheckSearchCond})
+		
+		if err != nil {
+			t.Errorf("%s", err.Error())
+		}
+	}
+	
+	// Test negative list condition tests
+	
+	var listExtCondNegMax = ListingsExtendedSearchCondition{PriceListings: PriceListings{MaxListPrice: -5000000, MinListPrice: 500000}}
+	_, err = listExtCondNegMax.getSearchString()
+	if (err == nil) {
+		t.Errorf("The current test should produce error: MaxListPrice can not be negative!")
+	}
+	
+	var listExtCondNegMin = ListingsExtendedSearchCondition{PriceListings: PriceListings{MaxListPrice: 5000000, MinListPrice: -500000}}
+	_, err = listExtCondNegMin.getSearchString()
+	if (err == nil) {
+		t.Errorf("The current test should produce error: MinListPrice can not be negative!")
+	}
+	
+	// Test negative sold condition tests	
+	var soldExtCondNegMax = SoldExtendedSearchCondition{PriceSold: PriceSold{MaxSoldPrice: -5000000, MinSoldPrice: 500000}}
+	_, err = soldExtCondNegMax.getSearchString()
+	if (err == nil) {
+		t.Errorf("The current test should produce error: MaxSoldPrice can not be negative!")
+	}
+	
+	var soldExtCondNegMin = SoldExtendedSearchCondition{PriceSold: PriceSold{MaxSoldPrice: 5000000, MinSoldPrice: -500000}}
+	_, err = soldExtCondNegMin.getSearchString()
+	if (err == nil) {
+		t.Errorf("The current test should produce error: MinSoldPrice can not be negative!")
+	}
+	
+	var soldExtCondIncorrectMaxSoldDate = SoldExtendedSearchCondition{PriceSold: PriceSold{MaxSoldPrice: 5000000, MinSoldPrice: 500000}, MinSoldDate: "20130101", MaxSoldDate: "10102013"}
+	_, err = soldExtCondIncorrectMaxSoldDate.getSearchString()
+	if (err == nil) {
+		t.Errorf("The current test should produce error: MaxSoldDate is not in the format 20060102, YYYYMMDD!")
+	}
+	
+    var soldExtCondIncorrectMinSoldDate = SoldExtendedSearchCondition{PriceSold: PriceSold{MaxSoldPrice: 5000000, MinSoldPrice: 500000}, MinSoldDate: "2013-01-01", MaxSoldDate: "20131010"}
+	_, err = soldExtCondIncorrectMinSoldDate.getSearchString()
+	if (err == nil) {
+		t.Errorf("The current test should produce error: MinSoldDate is not in the format 20060102, YYYYMMDD!")
+	}
+	
+	// Test positive search condition area test
+	var searchCondAreaQTest = SearchConditionArea{Q: "nacka"}
+	outstr, err := searchCondAreaQTest.getSearchString()		
+	if err != nil {
+		t.Errorf("%s", err.Error())
+	}
+		
+	_, err = GetResultImpl("areas?" + outstr, "xxx", "xxx", &MockHttpGet{UrlMatch: "http://api.booli.se/areas?q=nacka", TestType: GetCheckSearchCond})
+		
+	if err != nil {
+		t.Errorf("%s", err.Error())
+	}
+	
+	var searchCondAreaLatLongTest = SearchConditionArea{LatLong: "59.334979,18.065579"}
+	outstr, err = searchCondAreaLatLongTest.getSearchString()		
+	if err != nil {
+		t.Errorf("%s", err.Error())
+	}
+		
+	_, err = GetResultImpl("areas?" + outstr, "xxx", "xxx", &MockHttpGet{UrlMatch: "http://api.booli.se/areas?lat=59.334979&lng=18.065579", TestType: GetCheckSearchCond})
+		
+	if err != nil {
+		t.Errorf("%s", err.Error())
+	}
+	
+	// Test negative search condition area test
+	
+	//TODO
 	
 	// Test wrong auth
 	_, err = GetResultImpl("listings?offset=0&limit=3&q=nacka", "xxx", "xxx", &MockHttpGet{UrlMatch: "http://api.booli.se/listings?offset=0&limit=3&q=nacka", TestType: GetNonAuth})
