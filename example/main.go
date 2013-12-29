@@ -13,7 +13,7 @@ const (
 	)
 
 func main() {
-	booliRes, err := booli.GetResult("listings?", booli.SearchCondition{Q: "nacka", Price: booli.Price{MaxListPrice: 3000000, MinListPrice: 300000}, LivingArea: booli.LivingArea{MinLivingArea: 65}, Limit: 5}, BooliId, BooliKey)
+	booliRes, err := booli.GetResultListings("listings?", booli.SearchCondition{Q: "nacka", Price: booli.Price{MaxListPrice: 3000000, MinListPrice: 300000}, LivingArea: booli.LivingArea{MinLivingArea: 65}, Limit: 5},ListingsExtendedSearchCondition{}, BooliId, BooliKey)
 	if err != nil {
 		fmt.Println(err)
 	}

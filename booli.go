@@ -112,13 +112,24 @@ type SearchConditionArea struct {
 
 func (s *SearchConditionArea) getSearchString() (searchString string, err error) {
 	
-	if s.Q == "" && s.LatLong {
+	if s.Q == "" && s.LatLong == "" {
 	return "", &MissingArgumentError{ErrString: "Need Q or LatLong to perform a search!"}
 	}
 	
-	// Todo...
+	if s.LatLong != "" {
+		val, err := formatCheck(s.LatLong,2,"Latitude must be between 90 and -90 and Longitude must be between 180 and -180 and be in the format 1.0,1.0!","LatLongCheck")
+		if err != nil {
+			return "", err
+		}
+		split := strings.Split(val, ",")
+		searchString += "&lat=" + split[0] + "&lng" + split[1]  // hmm LatLong should be a separate object
+	}
+		
+	if s.Q != "" {
+		searchString += "&q=" + s.Q
+	} 
 	
-	return "", nil // Todo
+	return searchString, nil
 }
 
 type ListingsExtendedSearchCondition struct {
@@ -192,7 +203,6 @@ func (s *SoldExtendedSearchCondition) getSearchString() (searchString string, er
 	return searchString, nil
 }
 
-
 type SearchCondition struct {
 	Q string
 	Center string
@@ -213,7 +223,6 @@ type SearchCondition struct {
 	maxSqmPrice int
 	Limit int
 	Offset int
-	ExtendedProperties string
 }
 
 type PriceListings struct {
@@ -238,10 +247,6 @@ type LivingArea struct {
 
 type IHttpGet interface {
 	Get(url string) (r *http.Response, err error)
-}
-
-type ISearchCondition interface {
-	getSearchString() (searchString string, err error)
 }
 
 func (s *SearchCondition) getSearchString() (searchString string, err error) {
@@ -356,20 +361,6 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 			return "", &IncorrectArgumentError{ErrString: "MinRooms can not be negative!" }
 		}
 		searchString += "&minRooms=" +  strconv.FormatInt(int64(s.Rooms.MinRooms),10)
-	}	
-	
-	if s.Price.MaxListPrice != 0 {
-		if s.Price.MaxListPrice < 0 {
-			return "", &IncorrectArgumentError{ErrString: "MaxPrice can not be negative!" }
-		}
-		searchString += "&maxListPrice=" +  strconv.FormatInt(int64(s.Price.MaxListPrice),10)
-	}
-
-	if s.Price.MinListPrice != 0 {
-		if s.Price.MinListPrice < 0 {
-			return "", &IncorrectArgumentError{ErrString: "MinPrice can not be negative!" }
-		}
-		searchString += "&minListPrice=" +  strconv.FormatInt(int64(s.Price.MinListPrice),10)
 	}
 		
 	if s.AreaId != "" {
@@ -414,20 +405,54 @@ func (s *SearchCondition) getSearchString() (searchString string, err error) {
 		searchString += "&q=" + s.Q
 	} 
 	
-	if s.ExtendedProperties != "" {
-		searchString += s.ExtendedProperties
-	}
-	
 	return searchString, nil
 }
 
-// Returns a result from Booli or a empty result and a error if a problem was encountered
-func GetResult(prefix string, searchCond ISearchCondition, callerId string, key string) (booliRes Result, err error) {
-	return GetResultImpl(prefix, searchCond, callerId, key, &http.Client{})
+// Returns a result for Result Listings from Booli or a empty result and a error if a problem was encountered
+func GetResultListings(searchCond SearchCondition, listCond ListingsExtendedSearchCondition, callerId string, key string) (booliRes Result, err error) {
+
+	scond, err := searchCond.getSearchString()
+	if err != nil {
+		return booliRes, err
+	}
+	
+	lcond, err := listCond.getSearchString()
+	if err != nil {
+		return booliRes, err
+	}
+	
+	return GetResultImpl("listings?" + scond + lcond, callerId, key, &http.Client{})
+}
+
+// Returns a result for Sold Listings from Booli or a empty result and a error if a problem was encountered
+func GetResultSold(prefix string, searchCond SearchCondition, soldCond SoldExtendedSearchCondition, callerId string, key string) (booliRes Result, err error) {
+
+	scond, err := searchCond.getSearchString()
+	if err != nil {
+		return booliRes, err
+	}
+	
+	soldcond, err := soldCond.getSearchString()
+	if err != nil {
+		return booliRes, err
+	}
+	
+	return GetResultImpl("sold?" + scond + soldcond, callerId, key, &http.Client{})
+}
+
+// Returns a result for SearchArea Listings from Booli or a empty result and a error if a problem was encountered
+func GetResultSearchArea(prefix string, searchCond SearchConditionArea, callerId string, key string) (booliRes Result, err error) {
+
+	scond, err := searchCond.getSearchString()
+	if err != nil {
+		return booliRes, err
+	}
+	
+	return GetResultImpl("areas?" + scond, callerId, key, &http.Client{})
 }
 
 // Add a implementation function to be able to feed a custom Http.get function for unit testing
-func GetResultImpl(prefix string, searchCond ISearchCondition, callerId string, key string, httpGet IHttpGet) (booliRes Result, err error) {
+func GetResultImpl(cond string, callerId string, key string, httpGet IHttpGet) (booliRes Result, err error) {
 	if callerId == "" {
 		return booliRes, &MissingArgumentError{ErrString: "Caller Id empty!"}
 	}
@@ -436,7 +461,7 @@ func GetResultImpl(prefix string, searchCond ISearchCondition, callerId string, 
 		return booliRes, &MissingArgumentError{ErrString: "Key empty!"}
 	}
 
-	searchStr, err := searchStr(prefix, searchCond, callerId, key)
+	searchStr, err := searchStr(cond, callerId, key)
 	if err != nil {
 		return booliRes, err
 	}
@@ -479,13 +504,8 @@ func sha1String(instr string) (outStr string) {
 	return outStr
 }
 
-func searchStr(prefix string, searchCond ISearchCondition, callerId string, key string) (outstr string, err error) {
-	
-	cond, err := searchCond.getSearchString()
-	if err != nil {
-		return outstr, err
-	}
-	
+func searchStr(cond string, callerId string, key string) (outstr string, err error) {
+
 	time := strconv.FormatInt(int64(time.Now().Unix()),10)
 	
 	unique, err := unique()
@@ -494,7 +514,7 @@ func searchStr(prefix string, searchCond ISearchCondition, callerId string, key 
 	}
 	
 	hash := sha1String(callerId + time + key + unique)
-	outstr = BooliHttp + prefix + cond + "&callerId=" + callerId + "&time=" + time + "&unique=" + unique + "&hash=" + hash
+	outstr = BooliHttp + cond + "&callerId=" + callerId + "&time=" + time + "&unique=" + unique + "&hash=" + hash
 	return
 }
 
