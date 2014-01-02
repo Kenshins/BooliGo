@@ -102,6 +102,10 @@ type SearchConditionId struct {
 }
 
 func (s *SearchConditionId) getSearchString() (searchString string, err error) {
+
+	
+	
+	
 	return "", nil // Todo
 }
 
@@ -113,7 +117,11 @@ type SearchConditionArea struct {
 func (s *SearchConditionArea) getSearchString() (searchString string, err error) {
 	
 	if s.Q == "" && s.LatLong == "" {
-	return "", &MissingArgumentError{ErrString: "Need Q or LatLong to perform a search!"}
+	return "", &MissingArgumentError{ErrString: "Need Q OR LatLong to perform a search!"}
+	}
+	
+	if s.Q != "" && s.LatLong != "" {
+	return "", &MissingArgumentError{ErrString: "Need Q OR LatLong to perform a search, not both!"}
 	}
 	
 	if s.LatLong != "" {
@@ -122,7 +130,7 @@ func (s *SearchConditionArea) getSearchString() (searchString string, err error)
 			return "", err
 		}
 		split := strings.Split(val, ",")
-		searchString += "lat=" + split[0] + "&lng=" + split[1]  // hmm LatLong should be a separate object
+		searchString += "lat=" + split[0] + "&lng=" + split[1]
 	}
 		
 	if s.Q != "" {

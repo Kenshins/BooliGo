@@ -269,7 +269,29 @@ func TestGetResultImpl (t *testing.T) {
 	
 	// Test negative search condition area test
 	
-	//TODO
+	var searchCondAreaNoArgs = SearchConditionArea{}
+	outstr, err = searchCondAreaNoArgs.getSearchString()		
+	if err == nil {
+		t.Errorf("The current test should produce error: Need Q OR LatLong to perform a search, not both!")
+	}
+	
+	var searchCondAreaQandLatLong = SearchConditionArea{Q: "nacka", LatLong: "59.334979,18.065579"}
+	outstr, err = searchCondAreaQandLatLong.getSearchString()		
+	if err == nil {
+		t.Errorf("The current test should produce error: Need Q OR LatLong to perform a search, not both!")
+	}
+	
+	var searchCondAreaLat = SearchConditionArea{LatLong: "590.334979,18.065579"}
+	outstr, err = searchCondAreaLat.getSearchString()		
+	if err == nil {
+		t.Errorf("The current test should produce error: Latitude must be between 90 and -90 and Longitude must be between 180 and -180 and be in the format 1.0,1.0!")
+	}
+	
+	var searchCondAreaLong = SearchConditionArea{LatLong: "59.334979,1845.065579"}
+	outstr, err = searchCondAreaLong.getSearchString()		
+	if err == nil {
+		t.Errorf("The current test should produce error: Latitude must be between 90 and -90 and Longitude must be between 180 and -180 and be in the format 1.0,1.0!")
+	}
 	
 	// Test wrong auth
 	_, err = GetResultImpl("listings?offset=0&limit=3&q=nacka", "xxx", "xxx", &MockHttpGet{UrlMatch: "http://api.booli.se/listings?offset=0&limit=3&q=nacka", TestType: GetNonAuth})
