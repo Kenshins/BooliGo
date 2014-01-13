@@ -52,6 +52,36 @@ type Result struct {
 	Listings []HouseList
 }
 
+type ResultSold struct {
+	TotalCount int64
+	Count int64
+	Sold []SoldList
+}
+
+type ResultArea struct {
+	TotalCount int64
+	Count int64
+	Areas []AreasList
+}
+
+type SoldList struct {
+	BooliId int64
+	ListPrice int64
+	SoldPrice int64
+	SoldDate string
+	Published string
+	ListPriceChangeDate string
+	Objecttype string
+	Location LocationObject
+	Source SourceObject
+	Rooms float64
+    LivingArea float64
+    Rent int64
+    Floor int64
+    IsNewConstruction int64
+    Url string
+}
+
 type HouseList struct {
 	BooliId int64
 	ListPrice int64
@@ -66,6 +96,17 @@ type HouseList struct {
     Floor int64
     IsNewConstruction int64
     Url string
+}
+
+type AreasList struct {
+	BooliId int64
+    Name string
+    Types []string
+    ParentBooliId int64
+    ParentName string
+    ParentTypes []string
+    FullName string
+    Size int64
 }
 
 type LocationObject struct {
@@ -94,19 +135,6 @@ type SourceObject struct {
 	Name string
 	Url string
 	Type string
-}
-
-type SearchConditionId struct {
-	Prefix string
-	Id string
-}
-
-func (s *SearchConditionId) getSearchString() (searchString string, err error) {
-
-	
-	
-	
-	return "", nil // Todo
 }
 
 type SearchConditionArea struct {
@@ -433,7 +461,7 @@ func GetResultListings(searchCond SearchCondition, listCond ListingsExtendedSear
 }
 
 // Returns a result for Sold Listings from Booli or a empty result and a error if a problem was encountered
-func GetResultSold(prefix string, searchCond SearchCondition, soldCond SoldExtendedSearchCondition, callerId string, key string) (booliRes Result, err error) {
+func GetResultSold(searchCond SearchCondition, soldCond SoldExtendedSearchCondition, callerId string, key string) (booliRes ResultSold, err error) {
 
 	scond, err := searchCond.getSearchString()
 	if err != nil {
@@ -445,22 +473,110 @@ func GetResultSold(prefix string, searchCond SearchCondition, soldCond SoldExten
 		return booliRes, err
 	}
 	
-	return GetResultImpl("sold?" + scond + soldcond, callerId, key, &http.Client{})
+	return GetResultImplSold("sold?" + scond + soldcond, callerId, key, &http.Client{})
 }
 
 // Returns a result for SearchArea Listings from Booli or a empty result and a error if a problem was encountered
-func GetResultSearchArea(prefix string, searchCond SearchConditionArea, callerId string, key string) (booliRes Result, err error) {
+func GetResultSearchArea(searchCond SearchConditionArea, callerId string, key string) (booliRes ResultArea, err error) {
 
 	scond, err := searchCond.getSearchString()
 	if err != nil {
 		return booliRes, err
 	}
 	
-	return GetResultImpl("areas?" + scond, callerId, key, &http.Client{})
+	return GetResultImplArea("areas?" + scond, callerId, key, &http.Client{})
+}
+
+func GetResultListId(Id int, callerId string, key string) (booliRes Result, err error) {
+	return GetResultImpl( "listings/" + strconv.Itoa(Id) + "?", callerId, key, &http.Client{})
+}
+
+func GetResultSoldId(Id int, callerId string, key string) (booliRes ResultSold, err error) {
+	return GetResultImplSold( "sold/" + strconv.Itoa(Id) + "?", callerId, key, &http.Client{})
 }
 
 // Add a implementation function to be able to feed a custom Http.get function for unit testing
 func GetResultImpl(cond string, callerId string, key string, httpGet IHttpGet) (booliRes Result, err error) {
+	if callerId == "" {
+		return booliRes, &MissingArgumentError{ErrString: "Caller Id empty!"}
+	}
+	
+	if key == "" {
+		return booliRes, &MissingArgumentError{ErrString: "Key empty!"}
+	}
+
+	searchStr, err := searchStr(cond, callerId, key)
+	if err != nil {
+		return booliRes, err
+	}
+	
+	resp, err := httpGet.Get(searchStr)
+	if err != nil {
+		return booliRes, err
+	}
+	
+	if resp.StatusCode == 403 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return booliRes, errors.New("When reading the body from http response code 403 the following error occurred: " + err.Error())
+		}
+		return booliRes, &AuthError{ErrString: string(body)}
+	}
+	
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return booliRes, err
+	}
+	err = json.Unmarshal(body, &booliRes)
+	if err != nil {
+		return booliRes, err
+	}
+	return booliRes, nil
+}
+
+// Add a implementation function to be able to feed a custom Http.get function for unit testing
+func GetResultImplSold(cond string, callerId string, key string, httpGet IHttpGet) (booliRes ResultSold, err error) {
+	if callerId == "" {
+		return booliRes, &MissingArgumentError{ErrString: "Caller Id empty!"}
+	}
+	
+	if key == "" {
+		return booliRes, &MissingArgumentError{ErrString: "Key empty!"}
+	}
+
+	searchStr, err := searchStr(cond, callerId, key)
+	if err != nil {
+		return booliRes, err
+	}
+	
+	resp, err := httpGet.Get(searchStr)
+	if err != nil {
+		return booliRes, err
+	}
+	
+	if resp.StatusCode == 403 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return booliRes, errors.New("When reading the body from http response code 403 the following error occurred: " + err.Error())
+		}
+		return booliRes, &AuthError{ErrString: string(body)}
+	}
+	
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return booliRes, err
+	}
+	err = json.Unmarshal(body, &booliRes)
+	if err != nil {
+		return booliRes, err
+	}
+	return booliRes, nil
+}
+
+// Add a implementation function to be able to feed a custom Http.get function for unit testing
+func GetResultImplArea(cond string, callerId string, key string, httpGet IHttpGet) (booliRes ResultArea, err error) {
 	if callerId == "" {
 		return booliRes, &MissingArgumentError{ErrString: "Caller Id empty!"}
 	}
