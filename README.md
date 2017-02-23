@@ -1,3 +1,5 @@
+##IMPORTANT -- this library needs an update and may not work
+
 BooliGo
 =======
 
